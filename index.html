@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Daily Budget Countdown</title>
+  <style>
+    :root {
+      /* Theme colors: Pink, Magenta, Matcha Green, Neutrals */
+      --bg-color: #FAF6F8;
+      --card-bg: #FFFFFF;
+      --text-main: #2D2329;
+      --text-muted: #7A6B74;
+      --border-color: #E8DEE4;
+      
+      --accent-pink: #F472B6;
+      --accent-magenta: #DB2777;
+      --accent-magenta-dark: #BE185D;
+      
+      --tank-green: #10B981;
+      --tank-green-bg: #ECFDF5;
+      --tank-amber: #F59E0B;
+      --tank-amber-bg: #FFFBEB;
+      --tank-red: #EF4444;
+      --tank-red-bg: #FEF2F2;
+
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+
+      --font-family: Arial, system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      font-size: 15px;
+      line-height: 1.4;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding: clamp(12px, 3vw, 24px) 16px;
+      padding-top: max(16px, env(safe-area-inset-top));
+      padding-bottom: max(24px, env(safe-area-inset-bottom));
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Tabular numbers for clean numeric alignment */
+    .num {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Focus accessibility */
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 2px solid var(--accent-magenta);
+      outline-offset: 2px;
+    }
+
+    /* 1. Header */
+    .header {
+      text-align: center;
+      padding: 4px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent-magenta-dark);
+      letter-spacing: -0.01em;
+    }
+    .date-picker-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 2px;
+    }
+    .date-picker-wrapper label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .date-input {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 4px 10px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      color: var(--text-main);
+      background-color: #FFFFFF;
+      cursor: pointer;
+    }
+    .date-input:focus {
+      border-color: var(--accent-magenta);
+    }
+    .btn-today-shortcut {
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--accent-magenta);
+      cursor: pointer;
+    }
+    .btn-today-shortcut:hover {
+      background-color: var(--card-bg);
+      border-color: var(--accent-magenta);
+    }
+
+    /* Card container base style */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(219, 39, 119, 0.04);
+    }
+
+    /* 2. Budget Settings */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .data-management-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border-color);
+      flex-wrap: wrap;
+    }
+    .btn-secondary {
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-size: 0.8rem;
+      padding: 6px 12px;
+      height: 36px;
+    }
+    .btn-secondary:hover {
+      background-color: #E8DEE4;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .form-group label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .input-control {
+      width: 100%;
+      height: 42px;
+      padding: 0 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      background-color: #FFF;
+      transition: border-color 0.15s ease;
+    }
+    .input-control:focus {
+      border-color: var(--accent-magenta);
+    }
+    .btn {
+      height: 42px;
+      padding: 0 16px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background-color 0.15s ease, opacity 0.15s ease;
+    }
+    .btn-primary {
+      background-color: var(--accent-magenta);
+      color: #FFFFFF;
+    }
+    .btn-primary:hover {
+      background-color: var(--accent-magenta-dark);
+    }
+    .btn-primary:active {
+      transform: translateY(1px);
+    }
+
+    /* 3. Countdown Card (Draining Tank) */
+    .tank-card {
+      position: relative;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      padding: 24px 20px;
+      text-align: center;
+      border: 1px solid var(--border-color);
+      background-color: #FFFFFF;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    /* Liquid fill layer */
+    .tank-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--tank-green-bg);
+      border-top: 3px solid var(--tank-green);
+      transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s ease, border-color 0.4s ease;
+      z-index: 1;
+    }
+    /* Disable transitions for users preferring reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .tank-fill {
+        transition: none !important;
+      }
+    }
+    .tank-content {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+    }
+    .tank-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .tank-amount {
+      font-size: clamp(2.4rem, 8vw, 3.4rem);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+      margin: 4px 0 12px 0;
+      color: var(--text-main);
+      word-break: break-all;
+    }
+    .tank-amount.negative {
+      color: var(--tank-red);
+    }
+    .tank-details {
+      font-size: 0.88rem;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-weight: 500;
+    }
+    .tank-subdetail {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* 4 & 5. Input row and Category Chips */
+    .spending-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .amount-input-wrapper {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn-multiplier-pill {
+      height: 42px;
+      padding: 0 14px;
+      border: 1.5px solid var(--accent-pink);
+      background-color: var(--tank-green-bg);
+      color: var(--accent-magenta-dark);
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-multiplier-pill:hover {
+      background-color: var(--accent-pink);
+      color: #FFFFFF;
+    }
+    .btn-multiplier-pill:active {
+      transform: scale(0.96);
+    }
+    .chips-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip-radio {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .chip-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+      text-transform: capitalize;
+      /* Dynamic pill colors based on category theme */
+      background-color: var(--pill-bg, var(--bg-color));
+      border: 1.5px solid var(--pill-color, var(--border-color));
+      color: var(--pill-color, var(--text-main));
+    }
+    .chip-label:hover {
+      filter: brightness(0.97);
+    }
+    .chip-radio:checked + .chip-label {
+      background-color: var(--pill-color, var(--accent-pink));
+      border-color: var(--pill-color, var(--accent-magenta));
+      color: #FFFFFF;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    }
+    .chip-radio:focus-visible + .chip-label {
+      outline: 2px solid var(--accent-magenta);
+      outline-offset: 1px;
+    }
+
+    /* 6. Add spending button */
+    .btn-block {
+      width: 100%;
+      height: 46px;
+      font-size: 1rem;
+      margin-top: 4px;
+    }
+
+    /* Section Headings */
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sync-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      background: #ECFDF5;
+      color: #059669;
+      border: 1px solid #A7F3D0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .sync-badge.offline {
+      background: #FEF2F2;
+      color: #DC2626;
+      border-color: #FCA5A5;
+    }
+
+    /* 7. Today's spending list */
+    .spending-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .spending-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+    }
+    .spending-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      color: #FFF;
+      text-transform: capitalize;
+    }
+    .spending-amount {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .btn-delete {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      line-height: 1;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-delete:hover {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: var(--tank-red);
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      padding: 16px 8px;
+    }
+
+    /* 9. Today by Category (Pie Chart) */
+    .chart-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    @media (min-width: 400px) {
+      .chart-container {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-around;
+      }
+    }
+    .pie-svg {
+      width: 140px;
+      height: 140px;
+      transform: rotate(-90deg);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .legend-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      gap: 8px;
+    }
+    .legend-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* 10. Total per day (Bar Chart 7 days) */
+    .bar-chart-wrapper {
+      position: relative;
+      height: 150px;
+      margin-top: 24px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 0 4px;
+    }
+    .budget-line-container {
+      position: absolute;
+      left: 0;
+      right: 0;
+      width: 100%;
+      border-bottom: 1.5px dashed var(--accent-magenta);
+      z-index: 2;
+      pointer-events: none;
+    }
+    .budget-line-label {
+      position: absolute;
+      right: 0;
+      top: -18px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent-magenta);
+      background: var(--card-bg);
+      padding: 0 4px;
+      border-radius: 2px;
+    }
+    .bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+      position: relative;
+      z-index: 1;
+    }
+    .bar-val {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      white-space: nowrap;
+    }
+    .bar-track {
+      width: 100%;
+      max-width: 32px;
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+      background-color: var(--bg-color);
+      border-radius: 4px 4px 0 0;
+      overflow: hidden;
+    }
+    .bar-fill {
+      width: 100%;
+      background-color: var(--tank-green);
+      border-radius: 4px 4px 0 0;
+      transition: height 0.4s ease, background-color 0.3s ease;
+    }
+    .bar-fill.over-budget {
+      background-color: var(--tank-red);
+    }
+    .bar-day {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      text-transform: uppercase;
+    }
+    .bar-day.today {
+      font-weight: 900;
+      color: var(--accent-magenta-dark);
+    }
+    .chart-caption {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.3;
+      text-align: center;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- 1. HEADER -->
+    <header class="header">
+      <h1 id="header-date">Wednesday, 28 October</h1>
+      <div class="date-picker-wrapper">
+        <label for="input-selected-date">Date</label>
+        <input type="date" id="input-selected-date" class="date-input">
+        <button type="button" id="btn-today-shortcut" class="btn-today-shortcut">Today</button>
+      </div>
+      <div id="sync-status" class="sync-badge">☁️ Connecting...</div>
+    </header>
+
+    <!-- 2. BUDGET SETTINGS -->
+    <section class="card" aria-label="Budget settings">
+      <div class="settings-grid">
+        <div class="form-group">
+          <label for="input-daily-budget">Daily budget</label>
+          <input type="text" id="input-daily-budget" class="input-control num" inputmode="numeric" placeholder="100000">
+        </div>
+        <div class="form-group">
+          <label for="select-currency">Currency</label>
+          <select id="select-currency" class="input-control">
+            <option value="IDR">IDR</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="SGD">SGD</option>
+            <option value="JPY">JPY</option>
+          </select>
+        </div>
+        <div class="form-group" style="justify-content: flex-end;">
+          <label style="opacity:0;">Save</label>
+          <button type="button" id="btn-save-settings" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+
+      <!-- Local PC Data Management (Export / Import JSON) -->
+      <div class="data-management-row">
+        <button type="button" id="btn-export-pc" class="btn btn-secondary">💾 Backup to PC</button>
+        <button type="button" id="btn-import-pc" class="btn btn-secondary">📂 Load from PC</button>
+        <input type="file" id="input-import-file" accept=".json" style="display: none;">
+      </div>
+    </section>
+
+    <!-- 3. COUNTDOWN CARD -->
+    <section class="tank-card" aria-label="Remaining budget countdown">
+      <div id="tank-fill-layer" class="tank-fill"></div>
+      <div class="tank-content">
+        <div id="tank-label-text" class="tank-label">Left to spend today</div>
+        <div id="tank-amount-display" class="tank-amount num">IDR 0</div>
+        <div class="tank-details">
+          <div id="tank-spent-summary">Spent IDR 0 of IDR 100,000</div>
+          <div id="tank-time-left" class="num">0h 0m left in the day</div>
+          <div id="tank-hourly-suggest" class="tank-subdetail num">Suggested speed: IDR 0 / hour</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4, 5, 6. INPUT ROW & CATEGORIES & ADD BUTTON -->
+    <section class="card" aria-label="Log purchase">
+      <form id="spending-form" class="spending-form" onsubmit="return false;">
+        <div class="form-group">
+          <label for="input-amount">Amount</label>
+          <div class="amount-input-wrapper">
+            <input type="text" id="input-amount" class="input-control num" inputmode="decimal" placeholder="Enter amount spent">
+            <button type="button" id="btn-multiply-1000" class="btn-multiplier-pill">x1000</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Category</label>
+          <div class="chips-grid" id="category-chips-container">
+            <!-- Dynamically or statically generated radio chips -->
+          </div>
+        </div>
+
+        <!-- Custom Category Input (Triggered when "Other" category is chosen) -->
+        <div class="form-group" id="custom-category-group" style="display: none;">
+          <label for="input-custom-category">Custom Category Name</label>
+          <input type="text" id="input-custom-category" class="input-control" placeholder="e.g. Groceries, Parking, Gift...">
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button type="button" id="btn-add-spending" class="btn btn-primary btn-block" style="flex: 1;">Add spending</button>
+          <button type="button" id="btn-save-backup-action" class="btn btn-secondary" style="height: 46px; margin-top: 4px; padding: 0 16px; white-space: nowrap; font-weight: 700;">💾 Save</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 7. TODAY'S SPENDING LIST -->
+    <section class="card" aria-label="Selected day spending list">
+      <div class="section-title">
+        <span id="spending-list-title">Spending for selected date</span>
+        <span id="spending-count-badge" class="num" style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">0 items</span>
+      </div>
+      <ul id="spending-list" class="spending-list">
+        <!-- Rendered items go here -->
+      </ul>
+      <div id="spending-empty-msg" class="empty-state" style="display:none;">
+        No spending logged for this day yet.
+      </div>
+    </section>
+
+    <!-- 9. TODAY BY CATEGORY (PIE CHART) -->
+    <section class="card" aria-label="Spending by category for selected day">
+      <div id="pie-section-title" class="section-title">Category breakdown</div>
+      <div id="pie-container" class="chart-container">
+        <!-- SVG Pie and legend rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- 10. TOTAL PER DAY (BAR CHART) -->
+    <section class="card" aria-label="Last 7 days spending">
+      <div class="section-title">Total per day</div>
+      <div class="bar-chart-wrapper" id="bar-chart-container">
+        <!-- Dashed budget line and bars inserted dynamically -->
+      </div>
+      <div class="chart-caption">
+        Dashed line shows your daily budget. Bars turn red when total daily spending exceeds your set limit.
+      </div>
+    </section>
+
+  </div>
+
+  <!-- FIREBASE CLOUD STORAGE INTEGRATION -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Firebase Setup
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'daily-budget-app';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' 
+      ? JSON.parse(__firebase_config) 
+      : { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.cloudDB = db;
+    window.cloudAuth = auth;
+    window.appId = appId;
+
+    // Helper to get hex color with opacity for light pill backgrounds
+    function hexToRGBA(hex, opacity) {
+      hex = hex.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+
+    // Authenticate and subscribe to cloud storage doc
+    async function initCloudSync() {
+      const syncStatusEl = document.getElementById('sync-status');
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        const userId = auth.currentUser?.uid || 'guest-user';
+        const docRef = doc(db, 'artifacts', appId, 'users', userId, 'settings', 'budget_data');
+
+        window.saveStateToCloud = async function(data) {
+          if (!auth.currentUser) return;
+          try {
+            await setDoc(docRef, data, { merge: true });
+            if (syncStatusEl) {
+              syncStatusEl.className = 'sync-badge';
+              syncStatusEl.textContent = '☁️ Synced to cloud';
+            }
+          } catch (e) {
+            console.error('Cloud save failed', e);
+            if (syncStatusEl) {
+              syncStatusEl.className = 'sync-badge offline';
+              syncStatusEl.textContent = '⚠️ Saved locally';
+            }
+          }
+        };
+
+        onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.budget) window.state.budget = data.budget;
+            if (data.currency) window.state.currency = data.currency;
+            if (data.entries) window.state.entries = data.entries;
+            window.renderApp();
+          } else {
+            // First time cloud initialization with default state
+            window.saveStateToCloud(window.state);
+          }
+          if (syncStatusEl) {
+            syncStatusEl.className = 'sync-badge';
+            syncStatusEl.textContent = '☁️ Synced to cloud';
+          }
+        }, (error) => {
+          console.warn('Firestore subscription error:', error);
+          if (syncStatusEl) {
+            syncStatusEl.className = 'sync-badge offline';
+            syncStatusEl.textContent = '⚠️ Saved locally';
+          }
+        });
+
+      } catch (err) {
+        console.warn('Cloud Auth failed, running in local-only mode', err);
+        if (syncStatusEl) {
+          syncStatusEl.className = 'sync-badge offline';
+          syncStatusEl.textContent = '⚠️ Saved locally';
+        }
+      }
+    }
+
+    // Expose hexToRGBA to main script
+    window.hexToRGBA = hexToRGBA;
+    
+    // Initialize cloud sync after window load
+    window.addEventListener('load', initCloudSync);
+  </script>
+
+  <script>
+    /**
+     * CONSTANTS & CATEGORY DEFINITIONS (WITH ICONS)
+     */
+    const CATEGORIES = [
+      { id: 'meal', label: 'Meal', icon: '🍱', color: '#EC4899' },
+      { id: 'drink', label: 'Drink', icon: '☕', color: '#06B6D4' },
+      { id: 'food', label: 'Food', icon: '🍕', color: '#F59E0B' },
+      { id: 'drugs', label: 'Drugs', icon: '💊', color: '#10B981' },
+      { id: 'cosmetic', label: 'Cosmetic', icon: '💄', color: '#8B5CF6' },
+      { id: 'goods', label: 'Goods', icon: '🛍️', color: '#3B82F6' },
+      { id: 'electronics', label: 'Electronics', icon: '🎧', color: '#6366F1' },
+      { id: 'entertainment', label: 'Entertainment', icon: '🎬', color: '#F43F5E' },
+      { id: 'other', label: 'Other', icon: '✨', color: '#6B7280' }
+    ];
+
+    const STORAGE_KEY = 'daily_budget_countdown_app_data_v1';
+
+    /**
+     * APP STATE STRUCTURE
+     */
+    window.state = {
+      budget: 100000,
+      currency: 'IDR',
+      selectedDateKey: getTodayKey(),
+      entries: {}
+    };
+
+    /**
+     * BUDGET ROLLOVER LOGIC:
+     * Calculates the effective available budget for a specific day key (YYYY-MM-DD)
+     * by rolling over leftover budget (or deficit) from previous days.
+     */
+    function getEffectiveBudgetForDate(targetDateKey) {
+      const baseBudget = state.budget;
+      const targetDate = parseKeyToDate(targetDateKey);
+      
+      // Look back up to 30 days prior to calculate cumulative carryover
+      let carryover = 0;
+      for (let i = 30; i >= 1; i--) {
+        const prevDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate() - i);
+        const y = prevDate.getFullYear();
+        const m = String(prevDate.getMonth() + 1).padStart(2, '0');
+        const d = String(prevDate.getDate()).padStart(2, '0');
+        const prevKey = `${y}-${m}-${d}`;
+
+        // If entries existed or carryover exists, adjust next day's budget balance
+        if (state.entries[prevKey] !== undefined || carryover !== 0) {
+          const prevDayEntries = state.entries[prevKey] || [];
+          const prevDaySpent = prevDayEntries.reduce((sum, item) => sum + item.amount, 0);
+          const prevEffectiveBudget = baseBudget + carryover;
+          // Carry forward surplus (positive) or deficit (negative)
+          carryover = prevEffectiveBudget - prevDaySpent;
+        }
+      }
+
+      return baseBudget + carryover;
+    }
+
+    /**
+     * STORAGE HANDLING (LOCAL & CLOUD)
+     */
+    function loadState() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) {
+          const parsed = JSON.parse(data);
+          if (typeof parsed.budget === 'number' && parsed.budget > 0) state.budget = parsed.budget;
+          if (parsed.currency) state.currency = parsed.currency;
+          if (parsed.entries && typeof parsed.entries === 'object') state.entries = parsed.entries;
+        }
+      } catch (e) {
+        console.warn('LocalStorage unavailable or corrupt.', e);
+      }
+      cleanOldEntries();
+    }
+
+    function saveState() {
+      cleanOldEntries();
+      // 1. Local storage backup
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.warn('Failed to save to localStorage.', e);
+      }
+      // 2. Cloud Firestore sync
+      if (typeof window.saveStateToCloud === 'function') {
+        window.saveStateToCloud({
+          budget: state.budget,
+          currency: state.currency,
+          entries: state.entries
+        });
+      }
+    }
+
+    function cleanOldEntries() {
+      const dates = Object.keys(state.entries).sort();
+      if (dates.length > 30) {
+        const toDelete = dates.slice(0, dates.length - 30);
+        toDelete.forEach(d => delete state.entries[d]);
+      }
+    }
+
+    /**
+     * LOCAL PC BACKUP & RESTORE (JSON EXPORT/IMPORT)
+     */
+    function exportDataToPC() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `daily_budget_backup_${getTodayKey()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importDataFromPC(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          if (importedData && typeof importedData.budget === 'number' && importedData.entries) {
+            state.budget = importedData.budget;
+            if (importedData.currency) state.currency = importedData.currency;
+            state.entries = importedData.entries;
+            saveState();
+            renderApp();
+            alert("Data successfully restored from PC file!");
+          } else {
+            alert("Invalid backup file format.");
+          }
+        } catch (err) {
+          alert("Error reading backup JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /**
+     * DATE HELPER FUNCTIONS
+     */
+    function getTodayKey() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function formatHeaderDate(date = new Date()) {
+      const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+      return date.toLocaleDateString('en-US', options);
+    }
+
+    function parseKeyToDate(key) {
+      const [y, m, d] = key.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    /**
+     * CURRENCY FORMATTER
+     */
+    function formatMoney(amount, currencyCode = state.currency) {
+      const decimals = currencyCode === 'IDR' || currencyCode === 'JPY' ? 0 : 2;
+      try {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: currencyCode,
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals
+        }).format(amount);
+      } catch (e) {
+        return `${currencyCode} ${amount.toFixed(decimals)}`;
+      }
+    }
+
+    function formatCompactMoney(amount) {
+      const abs = Math.abs(amount);
+      if (abs >= 1000000) {
+        return (amount / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+      }
+      if (abs >= 1000) {
+        return (amount / 1000).toFixed(0) + 'K';
+      }
+      return amount.toFixed(0);
+    }
+
+    function parseLenientNumber(val) {
+      if (!val) return 0;
+      let cleaned = val.toString().trim().replace(/,/g, '');
+      const parts = cleaned.split('.');
+      if (parts.length > 2) {
+        cleaned = parts.join('');
+      }
+      const parsed = parseFloat(cleaned);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+
+    /**
+     * UI RENDERING CONTROLLER
+     */
+    window.renderApp = function() {
+      const selectedKey = state.selectedDateKey || getTodayKey();
+      const selectedDate = parseKeyToDate(selectedKey);
+      const isTodaySelected = selectedKey === getTodayKey();
+      
+      // 1. Header
+      document.getElementById('header-date').textContent = formatHeaderDate(selectedDate);
+      const dateInput = document.getElementById('input-selected-date');
+      if (document.activeElement !== dateInput) {
+        dateInput.value = selectedKey;
+      }
+
+      // Update Section Titles
+      document.getElementById('tank-label-text').textContent = isTodaySelected ? "Left to spend today" : "Left to spend on date";
+      document.getElementById('spending-list-title').textContent = isTodaySelected ? "Today's spending" : "Day's spending";
+      document.getElementById('pie-section-title').textContent = isTodaySelected ? "Today by category" : "Day by category";
+
+      // 2. Settings fields
+      const budgetInput = document.getElementById('input-daily-budget');
+      const currencySelect = document.getElementById('select-currency');
+      if (document.activeElement !== budgetInput) {
+        budgetInput.value = state.budget;
+      }
+      if (document.activeElement !== currencySelect) {
+        currencySelect.value = state.currency;
+      }
+
+      // Calculate Effective Budget (with carryover surplus/deficit)
+      const effectiveBudget = getEffectiveBudgetForDate(selectedKey);
+
+      // Calculations for Selected Date
+      const selectedEntries = state.entries[selectedKey] || [];
+      const totalSpentSelected = selectedEntries.reduce((sum, item) => sum + item.amount, 0);
+      const remainingSelected = effectiveBudget - totalSpentSelected;
+
+      // 3. Render Tank Card
+      renderTankCard(totalSpentSelected, remainingSelected, effectiveBudget, selectedDate, isTodaySelected);
+
+      // 7. Render Selected Day Spending List
+      renderSpendingList(selectedEntries);
+
+      // 9. Render Selected Day by Category (Pie Chart)
+      renderPieChart(selectedEntries, totalSpentSelected);
+
+      // 10. Render Total Per Day (Bar Chart)
+      renderBarChart();
+    };
+
+    /**
+     * 3. RENDER TANK CARD
+     */
+    function renderTankCard(spent, remaining, effectiveBudget, selectedDate, isTodaySelected) {
+      const fillLayer = document.getElementById('tank-fill-layer');
+      const amountDisplay = document.getElementById('tank-amount-display');
+      const spentSummary = document.getElementById('tank-spent-summary');
+      const timeLeftDisplay = document.getElementById('tank-time-left');
+      const hourlySuggest = document.getElementById('tank-hourly-suggest');
+
+      amountDisplay.textContent = formatMoney(remaining);
+      if (remaining < 0) {
+        amountDisplay.classList.add('negative');
+      } else {
+        amountDisplay.classList.remove('negative');
+      }
+
+      const ratio = effectiveBudget > 0 ? Math.max(0, Math.min(1, remaining / effectiveBudget)) : 0;
+      const fillHeightPercent = (ratio * 100).toFixed(1);
+      fillLayer.style.height = `${fillHeightPercent}%`;
+
+      if (remaining <= 0) {
+        fillLayer.style.backgroundColor = 'var(--tank-red-bg)';
+        fillLayer.style.borderColor = 'var(--tank-red)';
+      } else if (ratio <= 0.25) {
+        fillLayer.style.backgroundColor = 'var(--tank-amber-bg)';
+        fillLayer.style.borderColor = 'var(--tank-amber)';
+      } else {
+        fillLayer.style.backgroundColor = 'var(--tank-green-bg)';
+        fillLayer.style.borderColor = 'var(--tank-green)';
+      }
+
+      const carryoverDiff = effectiveBudget - state.budget;
+      let carryNote = "";
+      if (carryoverDiff > 0) {
+        carryNote = ` (+${formatMoney(carryoverDiff)} rolled over)`;
+      } else if (carryoverDiff < 0) {
+        carryNote = ` (${formatMoney(carryoverDiff)} deficit rolled over)`;
+      }
+
+      spentSummary.textContent = `Spent ${formatMoney(spent)} of ${formatMoney(effectiveBudget)}${carryNote}`;
+
+      if (isTodaySelected) {
+        const now = new Date();
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        const msLeft = endOfDay.getTime() - now.getTime();
+        const hoursLeft = Math.max(0, Math.floor(msLeft / (1000 * 60 * 60)));
+        const minsLeft = Math.max(0, Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60)));
+
+        timeLeftDisplay.textContent = `${hoursLeft}h ${minsLeft}m left in the day`;
+
+        const decimalHoursLeft = msLeft / (1000 * 60 * 60);
+        if (remaining > 0 && decimalHoursLeft > 0.05) {
+          const hourlyRate = remaining / decimalHoursLeft;
+          hourlySuggest.style.display = 'block';
+          hourlySuggest.textContent = `Suggested speed: ${formatMoney(hourlyRate)} / hour`;
+        } else if (remaining <= 0) {
+          hourlySuggest.style.display = 'block';
+          hourlySuggest.textContent = 'Budget exhausted for today';
+        } else {
+          hourlySuggest.style.display = 'none';
+        }
+      } else {
+        timeLeftDisplay.textContent = `Viewing recorded data for ${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        hourlySuggest.style.display = 'none';
+      }
+    }
+
+    /**
+     * 7. RENDER SPENDING LIST
+     */
+    function renderSpendingList(entries) {
+      const listEl = document.getElementById('spending-list');
+      const emptyMsg = document.getElementById('spending-empty-msg');
+      const countBadge = document.getElementById('spending-count-badge');
+
+      listEl.innerHTML = '';
+      countBadge.textContent = `${entries.length} item${entries.length === 1 ? '' : 's'}`;
+
+      if (entries.length === 0) {
+        emptyMsg.style.display = 'block';
+        return;
+      }
+
+      emptyMsg.style.display = 'none';
+
+      const sorted = [...entries].reverse();
+
+      sorted.forEach(item => {
+        const baseCategoryObj = CATEGORIES.find(c => c.id === item.category) || CATEGORIES[0];
+        const displayLabel = item.customName ? `${baseCategoryObj.icon} ${item.customName}` : `${baseCategoryObj.icon} ${baseCategoryObj.label}`;
+
+        const li = document.createElement('li');
+        li.className = 'spending-item';
+
+        const leftDiv = document.createElement('div');
+        leftDiv.className = 'spending-left';
+
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.style.backgroundColor = baseCategoryObj.color;
+        badge.textContent = displayLabel;
+
+        const amountSpan = document.createElement('span');
+        amountSpan.className = 'spending-amount num';
+        amountSpan.textContent = formatMoney(item.amount);
+
+        leftDiv.appendChild(badge);
+        leftDiv.appendChild(amountSpan);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-delete';
+        deleteBtn.type = 'button';
+        deleteBtn.setAttribute('aria-label', `Remove spending of ${formatMoney(item.amount)}`);
+        deleteBtn.textContent = '×';
+        deleteBtn.onclick = () => removeSpendingEntry(item.id);
+
+        li.appendChild(leftDiv);
+        li.appendChild(deleteBtn);
+
+        listEl.appendChild(li);
+      });
+    }
+
+    /**
+     * 9. RENDER TODAY BY CATEGORY (PIE CHART)
+     */
+    function renderPieChart(entries, totalSpent) {
+      const container = document.getElementById('pie-container');
+      container.innerHTML = '';
+
+      if (totalSpent <= 0 || entries.length === 0) {
+        const emptyPrompt = document.createElement('div');
+        emptyPrompt.className = 'empty-state';
+        emptyPrompt.textContent = 'Log your spending above to see category distribution.';
+        container.appendChild(emptyPrompt);
+        return;
+      }
+
+      const categoryTotals = {};
+      const categoryLabels = {};
+      entries.forEach(e => {
+        const key = e.customName ? `custom_${e.customName}` : e.category;
+        categoryTotals[key] = (categoryTotals[key] || 0) + e.amount;
+        
+        const baseCat = CATEGORIES.find(c => c.id === e.category) || CATEGORIES[0];
+        categoryLabels[key] = {
+          label: e.customName || baseCat.label,
+          icon: baseCat.icon,
+          color: baseCat.color
+        };
+      });
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 32 32');
+      svg.setAttribute('class', 'pie-svg');
+
+      let accumulatedPercent = 0;
+      const slices = [];
+
+      Object.keys(categoryTotals).forEach(catKey => {
+        const catAmount = categoryTotals[catKey];
+        const percent = catAmount / totalSpent;
+        const meta = categoryLabels[catKey];
+        
+        slices.push({
+          meta,
+          amount: catAmount,
+          percent
+        });
+      });
+
+      slices.forEach(slice => {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', '16');
+        circle.setAttribute('cx', '16');
+        circle.setAttribute('cy', '16');
+        circle.setAttribute('fill', 'transparent');
+        circle.setAttribute('stroke', slice.meta.color);
+        circle.setAttribute('stroke-width', '32');
+        
+        const strokeDasharray = `${slice.percent * 100} 100`;
+        const strokeDashoffset = -accumulatedPercent * 100;
+
+        circle.setAttribute('stroke-dasharray', strokeDasharray);
+        circle.setAttribute('stroke-dashoffset', strokeDashoffset);
+
+        svg.appendChild(circle);
+        accumulatedPercent += slice.percent;
+      });
+
+      const legendList = document.createElement('ul');
+      legendList.className = 'legend-list';
+
+      slices.sort((a, b) => b.amount - a.amount).forEach(slice => {
+        const li = document.createElement('li');
+        li.className = 'legend-item';
+
+        const left = document.createElement('div');
+        left.className = 'legend-left';
+
+        const dot = document.createElement('span');
+        dot.className = 'color-dot';
+        dot.style.backgroundColor = slice.meta.color;
+
+        const name = document.createElement('span');
+        name.textContent = `${slice.meta.icon} ${slice.meta.label}`;
+
+        left.appendChild(dot);
+        left.appendChild(name);
+
+        const right = document.createElement('div');
+        right.className = 'num';
+        right.style.fontWeight = '700';
+        right.textContent = `${formatMoney(slice.amount)} (${Math.round(slice.percent * 100)}%)`;
+
+        li.appendChild(left);
+        li.appendChild(right);
+        legendList.appendChild(li);
+      });
+
+      container.appendChild(svg);
+      container.appendChild(legendList);
+    }
+
+    /**
+     * 10. RENDER BAR CHART
+     */
+    function renderBarChart() {
+      const container = document.getElementById('bar-chart-container');
+      container.innerHTML = '';
+
+      const days = [];
+      const anchorDate = parseKeyToDate(state.selectedDateKey);
+      
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate() - i);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dayNum = String(d.getDate()).padStart(2, '0');
+        const key = `${y}-${m}-${dayNum}`;
+        const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+        const isSelectedDay = key === state.selectedDateKey;
+
+        const effBudget = getEffectiveBudgetForDate(key);
+        const dayEntries = state.entries[key] || [];
+        const totalSpent = dayEntries.reduce((sum, item) => sum + item.amount, 0);
+
+        days.push({ key, dayName, totalSpent, effBudget, isSelectedDay });
+      }
+
+      const maxSpent = Math.max(...days.map(d => d.totalSpent));
+      const chartMax = Math.max(state.budget, maxSpent) * 1.15 || 100000;
+
+      const budgetRatio = state.budget / chartMax;
+      const budgetLineBottomPercent = (budgetRatio * 100).toFixed(1);
+
+      const budgetLine = document.createElement('div');
+      budgetLine.className = 'budget-line-container';
+      budgetLine.style.bottom = `${budgetLineBottomPercent}%`;
+
+      const budgetLabel = document.createElement('span');
+      budgetLabel.className = 'budget-line-label num';
+      budgetLabel.textContent = `Base: ${formatCompactMoney(state.budget)}`;
+      budgetLine.appendChild(budgetLabel);
+
+      container.appendChild(budgetLine);
+
+      days.forEach(d => {
+        const col = document.createElement('div');
+        col.className = 'bar-col';
+
+        const valLabel = document.createElement('div');
+        valLabel.className = 'bar-val num';
+        valLabel.textContent = d.totalSpent > 0 ? formatCompactMoney(d.totalSpent) : '0';
+
+        const track = document.createElement('div');
+        track.className = 'bar-track';
+
+        const fill = document.createElement('div');
+        fill.className = 'bar-fill';
+        const heightPercent = Math.min(100, (d.totalSpent / chartMax) * 100);
+        fill.style.height = `${heightPercent}%`;
+
+        if (d.totalSpent > d.effBudget) {
+          fill.classList.add('over-budget');
+        }
+
+        track.appendChild(fill);
+
+        const dayLabel = document.createElement('div');
+        dayLabel.className = `bar-day ${d.isSelectedDay ? 'today' : ''}`;
+        dayLabel.textContent = d.dayName;
+
+        col.appendChild(valLabel);
+        col.appendChild(track);
+        col.appendChild(dayLabel);
+
+        container.appendChild(col);
+      });
+    }
+
+    /**
+     * SETUP CATEGORY CHIPS WITH ICONS & "OTHER" INPUT TRIGGER
+     */
+    function setupCategoryChips() {
+      const container = document.getElementById('category-chips-container');
+      const customGroup = document.getElementById('custom-category-group');
+      container.innerHTML = '';
+
+      CATEGORIES.forEach((cat, idx) => {
+        const radioId = `chip-${cat.id}`;
+        
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'category-choice';
+        radio.id = radioId;
+        radio.value = cat.id;
+        radio.className = 'chip-radio';
+        if (idx === 0) radio.checked = true;
+
+        radio.addEventListener('change', () => {
+          if (radio.value === 'other') {
+            customGroup.style.display = 'flex';
+            document.getElementById('input-custom-category').focus();
+          } else {
+            customGroup.style.display = 'none';
+          }
+        });
+
+        const label = document.createElement('label');
+        label.htmlFor = radioId;
+        label.className = 'chip-label';
+        label.innerHTML = `<span>${cat.icon}</span> <span>${cat.label}</span>`;
+
+        // Apply exact pie chart color to pill CSS variables
+        const pillBg = window.hexToRGBA ? window.hexToRGBA(cat.color, 0.12) : '#FAF6F8';
+        label.style.setProperty('--pill-color', cat.color);
+        label.style.setProperty('--pill-bg', pillBg);
+
+        container.appendChild(radio);
+        container.appendChild(label);
+      });
+    }
+
+    function addSpendingEntry() {
+      const amountInput = document.getElementById('input-amount');
+      const amount = parseLenientNumber(amountInput.value);
+
+      if (amount <= 0) {
+        amountInput.focus();
+        return;
+      }
+
+      const selectedRadio = document.querySelector('input[name="category-choice"]:checked');
+      const category = selectedRadio ? selectedRadio.value : 'meal';
+      let customName = null;
+
+      if (category === 'other') {
+        const customInput = document.getElementById('input-custom-category');
+        customName = customInput.value.trim() || 'Other';
+      }
+
+      const targetKey = state.selectedDateKey || getTodayKey();
+      if (!state.entries[targetKey]) {
+        state.entries[targetKey] = [];
+      }
+
+      const newEntry = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+        amount,
+        category,
+        customName,
+        timestamp: Date.now()
+      };
+
+      state.entries[targetKey].push(newEntry);
+      saveState();
+
+      amountInput.value = '';
+      const customCatInput = document.getElementById('input-custom-category');
+      if (customCatInput) customCatInput.value = '';
+      
+      renderApp();
+    }
+
+    function removeSpendingEntry(entryId) {
+      const targetKey = state.selectedDateKey || getTodayKey();
+      if (state.entries[targetKey]) {
+        state.entries[targetKey] = state.entries[targetKey].filter(item => item.id !== entryId);
+        saveState();
+        renderApp();
+      }
+    }
+
+    function saveSettings() {
+      const budgetInput = document.getElementById('input-daily-budget');
+      const currencySelect = document.getElementById('select-currency');
+
+      const parsedBudget = parseLenientNumber(budgetInput.value);
+      if (parsedBudget > 0) {
+        state.budget = parsedBudget;
+      }
+
+      if (currencySelect.value) {
+        state.currency = currencySelect.value;
+      }
+
+      saveState();
+      renderApp();
+    }
+
+    /**
+     * INITIALIZATION & EVENT LISTENERS
+     */
+    function init() {
+      loadState();
+      setupCategoryChips();
+      renderApp();
+
+      const dateInput = document.getElementById('input-selected-date');
+      dateInput.addEventListener('change', (e) => {
+        if (e.target.value) {
+          state.selectedDateKey = e.target.value;
+          renderApp();
+        }
+      });
+
+      document.getElementById('btn-today-shortcut').addEventListener('click', () => {
+        state.selectedDateKey = getTodayKey();
+        renderApp();
+      });
+
+      document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
+      document.getElementById('select-currency').addEventListener('change', saveSettings);
+      document.getElementById('btn-add-spending').addEventListener('click', addSpendingEntry);
+
+      // Save / Backup button beside Add spending
+      document.getElementById('btn-save-backup-action').addEventListener('click', exportDataToPC);
+
+      // Multiply by 1000 pill trigger
+      document.getElementById('btn-multiply-1000').addEventListener('click', () => {
+        const amountInput = document.getElementById('input-amount');
+        const currentVal = parseLenientNumber(amountInput.value);
+        if (currentVal > 0) {
+          amountInput.value = (currentVal * 1000).toLocaleString('en-US');
+        } else if (amountInput.value.trim() !== '') {
+          const rawNum = parseFloat(amountInput.value.replace(/[^0-9.]/g, ''));
+          if (!isNaN(rawNum) && rawNum > 0) {
+            amountInput.value = (rawNum * 1000).toLocaleString('en-US');
+          }
+        }
+        amountInput.focus();
+      });
+
+      // Local PC Backup & Load Event Listeners
+      document.getElementById('btn-export-pc').addEventListener('click', exportDataToPC);
+      document.getElementById('btn-import-pc').addEventListener('click', () => {
+        document.getElementById('input-import-file').click();
+      });
+      document.getElementById('input-import-file').addEventListener('change', importDataFromPC);
+
+      document.getElementById('input-amount').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addSpendingEntry();
+        }
+      });
+
+      document.getElementById('input-daily-budget').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveSettings();
+        }
+      });
+
+      setInterval(() => {
+        renderApp();
+      }, 30000);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
