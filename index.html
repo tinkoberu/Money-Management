@@ -925,13 +925,13 @@
     }
 
     /**
-     * LOCAL DEVICE BACKUP & RESTORE (JSON EXPORT/IMPORT WITH FOLDER PICKER)
+     * LOCAL DEVICE BACKUP & RESTORE (JSON EXPORT/IMPORT WITH MOBILE & DESKTOP SUPPORT)
      */
     async function exportDataToPC() {
       const jsonContent = JSON.stringify(state, null, 2);
       const defaultFileName = `daily_budget_backup_${getTodayKey()}.json`;
 
-      // Try modern File System Access API (supports folder/file picker prompt)
+      // 1. Try modern File System Access API (Works on Desktop browsers)
       if ('showSaveFilePicker' in window) {
         try {
           const handle = await window.showSaveFilePicker({
@@ -944,21 +944,36 @@
           const writable = await handle.createWritable();
           await writable.write(jsonContent);
           await writable.close();
+          alert("Backup successfully saved to chosen location!");
           return;
         } catch (err) {
           if (err.name === 'AbortError') return; // User cancelled file picker prompt
-          console.warn('showSaveFilePicker failed, falling back to standard download prompt', err);
+          console.warn('showSaveFilePicker failed or unsupported, falling back to standard download prompt', err);
         }
       }
 
-      // Fallback download method if File System Access API is not available or supported
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonContent);
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", defaultFileName);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
+      // 2. Reliable Mobile & Fallback Download Trigger
+      try {
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        const blobUrl = URL.createObjectURL(blob);
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.href = blobUrl;
+        downloadAnchor.download = defaultFileName;
+        
+        // Append to DOM to ensure click execution on iOS Safari & Android Chrome
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(downloadAnchor);
+          URL.revokeObjectURL(blobUrl);
+        }, 100);
+
+        alert(`Backup file saved to your device Downloads folder!\n(${defaultFileName})`);
+      } catch (e) {
+        alert("Failed to save backup file on this device.");
+      }
     }
 
     function importDataFromPC(event) {
